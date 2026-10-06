@@ -7,7 +7,11 @@ int my_strlen(char *str) {
      */
 
     // IMPLEMENT YOUR CODE HERE
-    return 0;
+    int len = 0;
+    while (str[len]!='\0'){
+        ++len;
+    }
+    return len;
 }
 
 
@@ -19,6 +23,18 @@ void my_strcat(char *str_1, char *str_2) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+    int i = 0;
+    while(str_1[i]!='\0'){
+            ++i;
+
+    }
+    int j = 0;
+    while(str_2[j]!='\0'){
+        str_1[i] = str_2[j];
+        ++i;
+        ++j;
+    }
+    str_1[i] = '\0';
 }
 
 
@@ -31,6 +47,27 @@ char* my_strstr(char *s, char *p) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+    if(*p == '\0'){
+        return s;
+
+    }
+    for (int i = 0; s[i] != '\0'; ++i){
+        int j = 0;
+        while(p[j]!='\0'&& s[i+j]==p[j]){
+            ++j;
+
+
+
+        }
+        if (p[j] == '\0'){
+            return &s[i];
+        }
+
+
+    }
+
+
+
     return 0;
 }
 
@@ -97,6 +134,23 @@ void rgb2gray(float *in, float *out, int h, int w) {
 
     // IMPLEMENT YOUR CODE HERE
     // ...
+    for(int y = 0;y < h;++y){
+        for(int x = 0;x < w;++x){
+            int gray_index = y * w + x;
+            int rgb_index = gray_index*3;
+            float r = in[rgb_index];
+            float g = in[rgb_index+1];
+            float b = in[rgb_index+2];
+            out[gray_index] = 0.2989f * r + 0.5870f * g + 0.1140f * b;
+
+
+
+        }
+
+
+    }
+
+
 }
 
 // 练习5，实现图像处理算法 resize：缩小或放大图像
@@ -196,8 +250,55 @@ void resize(float *in, float *out, int h, int w, int c, float scale) {
      *        所以需要对其进行边界检查
      */
 
-    int new_h = h * scale, new_w = w * scale;
+    //int new_h = h * scale, new_w = w * scale;
     // IMPLEMENT YOUR CODE HERE
+    if (scale <= 0.0f || h <= 0 || w <= 0 || c <=0 ){
+
+        return;
+    }
+
+    int new_h = static_cast<int>(h * scale);
+    int new_w = static_cast<int>(w * scale);
+
+    for (int y = 0; y < new_h; ++y){
+        float y0 = y / scale;
+        int y1 = static_cast<int>(y0);
+        int y2 = (y1 + 1 < w) ? y1 + 1 : y1;
+        float dy = y0 - y1;
+
+        for (int x = 0; x < new_w; ++x){
+            float x0 = x/scale;
+            int x1 = static_cast<int>(x0);
+            int x2 = (x1 + 1 < w) ? x1 + 1 : x1 ;
+            float dx = x0 - x1;
+
+            for (int k = 0 ; k < c;++k){
+                int p11 = (y1 * w + x1) * c + k;
+                int p12 = (y1 * w + x2) * c + k;
+                int p21 = (y2 * w + x1) * c + k;
+                int p22 = (y2 * w + x2) * c + k;
+
+                float top = in[p11] * (1.0f - dx) + in[p12] * dx;
+                float bottom = in[p21] * (1.0f - dx) + in[p22] * dx;
+
+                out[(y * new_w + x) * c + k] = top * (1.0f - dy) + bottom * dy;
+
+
+
+
+            }
+
+
+
+
+        }
+
+
+    }
+
+
+
+
 
 }
 
@@ -221,4 +322,78 @@ void hist_eq(float *in, int h, int w) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+    int total = h * w;
+
+    if (total <= 0) {
+
+        return;
+    }
+
+    int histogram[256] = {0};
+
+    for (int i = 0 ; i < total ; ++i){
+        int level = static_cast<int>(in[i] + 0.5f);
+
+        if (level < 0){
+            level = 0;
+
+        }
+        if (level > 255){
+            level = 255;
+        }
+
+        ++histogram[level];
+
+
+
+    }
+    int cdf[256] = {0};
+    int sum = 0;
+
+    for (int level = 0; level < 256; ++level){
+        sum += histogram[level];
+        cdf[level] = sum;
+
+    }
+    int cdf_min = 0;
+    for (int level = 0;level < 256;++level){
+        if(histogram[level] > 0){
+            cdf_min = cdf[level];
+            break;
+        }
+
+    }
+    float mapping[256] = {0.0f};
+    float denominator = static_cast<float>(total - cdf_min);
+
+    for(int level = 0; level < 256; ++level){
+        if (denominator > 0.0f){
+            float value = (cdf[level] - cdf_min) * 255.0f / denominator;
+            if (value < 0.0f){
+                value = 0.0f;
+            }
+            if (value > 255.0f){
+                value = 255.0f;
+            }
+
+        mapping[level] = static_cast<int>(value + 0.5f);
+        }else{
+            mapping[level] = static_cast<float>(level);
+
+        }
+        }
+    for (int i = 0; i < total ; ++i){
+        int level = static_cast<int>(in[i] + 0.5f);
+
+        if (level < 0){
+            level = 0;
+        }
+        if (level > 255){
+            level = 255;
+        }
+
+        in[i] = mapping[level];
+
+    }
+
 }
